@@ -1,0 +1,249 @@
+// IT Asset Management System - Prisma Schema
+// Database: SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Models ─────────────────────────────────────────────
+
+model Location {
+  id        Int      @id @default(autoincrement())
+  siteName  String
+  address   String?
+  city      String?
+  country   String?
+  createdAt DateTime @default(now())
+
+  employees Employee[]
+  assets    Asset[]
+
+  @@map("locations")
+}
+
+model Department {
+  id             Int      @id @default(autoincrement())
+  departmentName String
+  managerId      Int?
+  createdAt      DateTime @default(now())
+
+  employees Employee[]
+
+  @@map("departments")
+}
+
+model Employee {
+  id           Int      @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  employeeId   String?  @unique
+  departmentId Int?
+  locationId   Int?
+  status       String   @default("Active")
+  createdAt    DateTime @default(now())
+
+  department  Department?       @relation(fields: [departmentId], references: [id])
+  location    Location?         @relation(fields: [locationId], references: [id])
+  assignments AssetAssignment[]
+
+  @@map("employees")
+}
+
+model Vendor {
+  id           Int      @id @default(autoincrement())
+  vendorName   String
+  contactName  String?
+  contactEmail String?
+  supportPhone String?
+  createdAt    DateTime @default(now())
+
+  assets          Asset[]
+  maintenanceLogs MaintenanceLog[]
+  purchaseOrders  PurchaseOrder[]
+
+  @@map("vendors")
+}
+
+model AssetCategory {
+  id           Int      @id @default(autoincrement())
+  categoryName String
+  description  String?
+  parentId     Int?
+  defaultPrice Float?
+  createdAt    DateTime @default(now())
+
+  parent        AssetCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  subCategories AssetCategory[] @relation("CategoryHierarchy")
+
+  assets Asset[]
+  purchaseSchedules PurchaseSchedule[]
+
+  @@map("asset_categories")
+}
+
+model Asset {
+  computerName       String    @id
+  serialNumber       String?   @unique
+  categoryId         Int?
+  brandId            Int?
+  vendorId           Int?
+  model              String?
+  assetNumber        String?
+  purchaseOrderNo    String?
+  purchaseDate       DateTime?
+  purchaseCost       Float?
+  warrantyStart      DateTime?
+  warrantyExpiration DateTime?
+  expectedRefreshDate DateTime?
+  status             String    @default("In Stock")
+  locationId         Int?
+  notes              String?
+  operatingSystem    String?
+  ipAddress          String?
+  macAddress         String?
+  isAssetLabeled     Boolean   @default(false)
+  orderInProgress    Boolean   @default(false)
+  areaId             Int?
+  createdAt          DateTime  @default(now())
+
+  category        AssetCategory?    @relation(fields: [categoryId], references: [id])
+  brand           Brand?            @relation(fields: [brandId], references: [id])
+  vendor          Vendor?           @relation(fields: [vendorId], references: [id])
+  location        Location?         @relation(fields: [locationId], references: [id])
+  area            Area?             @relation(fields: [areaId], references: [id])
+  assignments     AssetAssignment[]
+  maintenanceLogs MaintenanceLog[]
+
+  @@map("assets")
+}
+
+model AssetAssignment {
+  id                 Int       @id @default(autoincrement())
+  assetId            String
+  employeeId         Int
+  assignedDate       DateTime
+  expectedReturnDate DateTime?
+  actualReturnDate   DateTime?
+  checkOutCondition  String?
+  checkInCondition   String?
+  assignedBy         String?
+  createdAt          DateTime  @default(now())
+
+  asset    Asset    @relation(fields: [assetId], references: [computerName])
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@map("asset_assignments")
+}
+
+model MaintenanceLog {
+  id          Int      @id @default(autoincrement())
+  assetId     String
+  serviceDate DateTime
+  serviceType String
+  vendorId    Int?
+  cost        Float?
+  description String?
+  performedBy String?
+  createdAt   DateTime @default(now())
+
+  asset  Asset   @relation(fields: [assetId], references: [computerName])
+  vendor Vendor? @relation(fields: [vendorId], references: [id])
+
+  @@map("maintenance_logs")
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  email            String   @unique
+  ntid             String?  @unique
+  passwordHash     String
+  passwordChangedAt DateTime @default(now())
+  name             String?
+  role             String   @default("USER") // "ADMIN" or "USER"
+  createdAt        DateTime @default(now())
+
+  passwordHistory  PasswordHistory[]
+
+  @@map("users")
+}
+
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  userId       Int
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_history")
+}
+
+model Brand {
+  id           Int           @id @default(autoincrement())
+  brandName    String
+  createdAt    DateTime      @default(now())
+
+  assets       Asset[]
+
+  @@map("brands")
+}
+
+model Area {
+  id        Int      @id @default(autoincrement())
+  building  String
+  room      String
+  location  String
+  remark    String?
+  createdAt DateTime @default(now())
+
+  assets    Asset[]
+
+  @@map("areas")
+}
+
+model FYBudget {
+  fiscalYear Int      @id
+  amount     Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("fy_budgets")
+}
+
+model PurchaseOrder {
+  id              Int      @id @default(autoincrement())
+  poNumber        String   @unique
+  vendorId        Int
+  type            String   @default("STANDARD") // "STANDARD" or "BLANKET"
+  totalAmount     Float
+  remainingAmount Float?   // For Blanket POs
+  startDate       DateTime?
+  endDate         DateTime?
+  status          String   @default("OPEN")
+  createdAt       DateTime @default(now())
+
+  vendor    Vendor             @relation(fields: [vendorId], references: [id])
+  schedules PurchaseSchedule[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseSchedule {
+  id               Int      @id @default(autoincrement())
+  purchaseOrderId  Int
+  assetCategoryId  Int?
+  quantity         Int
+  expectedDelivery DateTime
+  deliveryType     String   @default("JUST_IN_TIME") // "JUST_IN_TIME" or "SUPPLIER_WAREHOUSE"
+  status           String   @default("PENDING")      // "PENDING", "DELIVERED"
+  
+  purchaseOrder PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id])
+  category      AssetCategory? @relation(fields: [assetCategoryId], references: [id])
+
+  @@map("purchase_schedules")
+}
