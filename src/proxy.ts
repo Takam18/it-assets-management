@@ -5,7 +5,7 @@ const protectedRoutes = ['/']
 const publicRoutes = ['/login']
 const adminRoutes = ['/admin/users']
 
-export default async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname
   const isProtectedRoute = protectedRoutes.includes(path) || path.startsWith('/assets') || path.startsWith('/employees') || path.startsWith('/departments') || path.startsWith('/locations') || path.startsWith('/vendors') || path.startsWith('/categories') || path.startsWith('/assignments') || path.startsWith('/maintenance') || path.startsWith('/brands')
   const isPublicRoute = publicRoutes.includes(path)
