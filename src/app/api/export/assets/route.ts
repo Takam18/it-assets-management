@@ -1,8 +1,12 @@
 import { getAssets } from '@/actions/assets'
 import { NextRequest, NextResponse } from 'next/server'
+import { verifySession } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
   try {
+    const session = await verifySession()
+    if (!session) return new NextResponse('Unauthorized', { status: 401 })
+
     const searchParams = req.nextUrl.searchParams
     const search = searchParams.get('search') || undefined
     const status = searchParams.get('status') || undefined

@@ -14,9 +14,9 @@ export default async function ProcurePage() {
   // Extract data with fallback for empty arrays in case of schema cache errors
   const forecastData = forecastRes.assets || []
   const poData = poRes.pos || []
-  const vendorsData = vendorsRes.vendors || []
-  const categoriesData = categoriesRes.categories || []
-  const note = poRes.note || forecastRes.note || null
+  const vendorsData = Array.isArray(vendorsRes) ? vendorsRes : []
+  const categoriesData = Array.isArray(categoriesRes) ? categoriesRes : []
+  const note = ('note' in poRes ? poRes.note : null) || ('note' in forecastRes ? (forecastRes as any).note : null)
 
   return (
     <div className="main-content">

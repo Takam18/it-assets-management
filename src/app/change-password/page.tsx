@@ -21,7 +21,7 @@ export default function ChangePasswordPage() {
       setError(result.error)
       setLoading(false)
     } else if (result?.success) {
-      router.push(result.redirect || '/')
+      router.push(((result as any).redirect as string) || '/')
       router.refresh()
     }
   }

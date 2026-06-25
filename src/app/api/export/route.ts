@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { verifySession } from '@/lib/session'
 
 export async function GET(request: Request) {
+  const session = await verifySession()
+  if (!session) return new NextResponse('Unauthorized', { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const model = searchParams.get('model')
 
